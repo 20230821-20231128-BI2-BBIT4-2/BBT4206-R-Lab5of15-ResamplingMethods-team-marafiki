@@ -1,0 +1,454 @@
+---
+title: "Business Intelligence Lab Submission Markdown"
+author: "Team Marafiki"
+date: "17/10/2023"
+output:
+  github_document:
+    toc: yes
+    toc_depth: 4
+    fig_width: 6
+    fig_height: 4
+    df_print: default
+  html_document:
+    toc: yes
+    toc_depth: '4'
+    df_print: paged
+editor_options:
+  chunk_output_type: console
+---
+
+# Student Details
+
++---------------------------------------------------+---------------------------------------------+
+| **Student ID Numbers and Names of Group Members** | 1.  136446 - C - Mirav Bhojani              |
+|                                                   |                                             |
+|                                                   | 2.  136788 - C - Derrick Nyaga              |
+|                                                   |                                             |
+|                                                   | 3.  136709 - C - Jane Mugo                  |
+|                                                   |                                             |
+|                                                   | 4.  136895 - C - Wesley Wanyama             |
+|                                                   |                                             |
+|                                                   | 5.  135399 - C - Sheilla Kavinya            |
++---------------------------------------------------+---------------------------------------------+
+| **GitHub Classroom Group Name**                   | *Team Marafiki*                             |
++---------------------------------------------------+---------------------------------------------+
+| **Course Code**                                   | BBT4206                                     |
++---------------------------------------------------+---------------------------------------------+
+| **Course Name**                                   | Business Intelligence II                    |
++---------------------------------------------------+---------------------------------------------+
+| **Program**                                       | Bachelor of Business Information Technology |
++---------------------------------------------------+---------------------------------------------+
+| **Semester Duration**                             | 21^st^ August 2023 to 28^th^ November 2023  |
++---------------------------------------------------+---------------------------------------------+
+# Setup Chunk
+
+We start by installing all the required packages
+
+```{r Install Packages, echo=TRUE, message=FALSE, warning=FALSE}
+## formatR - Required to format R code in the markdown ----
+
+if (!is.element("formatR", installed.packages()[, 1])) {
+  install.packages("formatR", dependencies = TRUE,
+                   repos="https://cloud.r-project.org")
+}
+require("formatR")
+
+
+if (require("caret")) {
+  require("caret")
+} else {
+  install.packages("caret", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## klaR ----
+if (require("klaR")) {
+  require("klaR")
+} else {
+  install.packages("klaR", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## e1071 ----
+if (require("e1071")) {
+  require("e1071")
+} else {
+  install.packages("e1071", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## readr ----
+if (require("readr")) {
+  require("readr")
+} else {
+  install.packages("readr", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## LiblineaR ----
+if (require("LiblineaR")) {
+  require("LiblineaR")
+} else {
+  install.packages("LiblineaR", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## naivebayes ----
+if (require("naivebayes")) {
+  require("naivebayes")
+} else {
+  install.packages("naivebayes", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+if (require("mlbench")) {
+  library(mlbench)
+} else {
+  install.packages("mlbench", dependencies = TRUE, repos = "https://cloud.r-project.org") # nolint
+  library(mlbench)
+}
+if (!require("kernlab")) {
+  install.packages("kernlab", dependencies = TRUE, repos = "https://cloud.r-project.org") # nolint
+}
+library(kernlab)
+
+
+```
+
+------------------------------------------------------------------------
+
+**Note:** the following "*KnitR*" options have been set as the defaults in this markdown:\
+`knitr::opts_chunk$set(echo = TRUE, warning = FALSE, eval = TRUE, collapse = FALSE, tidy.opts = list(width.cutoff = 80), tidy = TRUE)`.
+
+More KnitR options are documented here <https://bookdown.org/yihui/rmarkdown-cookbook/chunk-options.html> and here <https://yihui.org/knitr/options/>.
+
+```{r setup, echo=TRUE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(
+	eval = TRUE,
+	echo = TRUE,
+	warning = FALSE,
+	collapse = FALSE,
+	tidy = TRUE
+)
+```
+
+------------------------------------------------------------------------
+
+**Note:** the following "*R Markdown*" options have been set as the defaults in this markdown:
+
+> output:\
+> \
+> github_document:\
+> toc: yes\
+> toc_depth: 4\
+> fig_width: 6\
+> fig_height: 4\
+> df_print: default\
+> \
+> editor_options:\
+> chunk_output_type: console
+
+# Load the Pima Indians Diabetes dataset
+
+```{r Load dataset}
+data("PimaIndiansDiabetes")
+```
+
+# Naive Bayes model
+```{r}
+#Split the dataset into a 75% training set and a 25% testing set
+splitIndex <- createDataPartition(PimaIndiansDiabetes$diabetes, p = 0.75, list = FALSE)
+Pima_train <- PimaIndiansDiabetes[splitIndex, ]
+Pima_test <- PimaIndiansDiabetes[-splitIndex, ]
+
+# Check the dimensions of the training and testing sets
+cat("Training set dimensions: ", dim(Pima_train), "\n")
+cat("Testing set dimensions: ", dim(Pima_test), "\n")
+
+# Train a Naive Bayes classifier using e1071 library
+pima_nb_model <- naiveBayes(diabetes ~ ., data = Pima_train)
+
+# Print the model summary
+print(pima_nb_model)
+
+# Use the trained Naive Bayes model to make predictions on the testing dataset
+predictions <- predict(pima_nb_model, newdata = Pima_test)
+
+# Create a confusion matrix
+confusion_matrix <- table(Actual = Pima_test$diabetes, Predicted = predictions)
+
+# Print the confusion matrix
+print("Confusion Matrix:")
+print(confusion_matrix)
+
+# Calculate and print accuracy
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+cat("Accuracy: ", accuracy, "\n")
+
+# Create a heatmap of the confusion matrix
+heatmap(confusion_matrix, 
+        col = colorRampPalette(c("Black", "red"))(10), 
+        main = "Confusion Matrix Heatmap", 
+        xlab = "Predicted", 
+        ylab = "Actual")
+
+# Create a table of predictions vs. actual values
+prediction_table <- table(Predicted = predictions, Actual = Pima_test$diabetes)
+
+# Plot the table
+print("Prediction Table:")
+print(prediction_table)
+
+```
+
+# linear regression model
+```{r}
+
+Pima_test$diabetes <- as.numeric(Pima_test$diabetes)
+
+lm_model <- lm(diabetes ~ ., data = Pima_train)
+
+lm_predictions <- predict(lm_model, newdata = Pima_test)
+
+# Evaluate the model's performance
+actual_values <- Pima_test$diabetes
+mse <- mean((lm_predictions - actual_values)^2)
+rmse <- sqrt(mse)
+
+# Print the evaluation results
+cat("Mean Squared Error (MSE): ", mse, "\n")
+cat("Root Mean Squared Error (RMSE): ", rmse, "\n")
+
+# Create a data frame with new data for prediction
+new_data <- data.frame(
+  pregnant = 5,
+  glucose = 110,
+  pressure = 70,
+  triceps = 30,
+  insulin = 50,
+  mass = 56.0,
+  pedigree = 0.324,
+  age = 35
+)
+
+# Use the trained linear regression model to make predictions on the new data
+predictions <- predict(lm_model, newdata = new_data)
+
+# Convert numeric predictions to "neg" or "pos"
+predictions_binary <- ifelse(predictions > 0.5, "pos", "neg")
+
+# Print the predicted diabetes outcome
+cat("Predicted diabetes outcome for the new data:")
+print(predictions_binary)
+```
+
+# logistic Regression model with K-fold cross-validation
+```{r}
+# Define the control parameters for 10-fold cross-validation with accuracy as the metric
+ctrl <- trainControl(
+  method = "cv",              # Use 10-fold cross-validation
+  number = 10,                # Number of folds
+  classProbs = TRUE,          # Enable class probabilities for logistic regression
+  summaryFunction = twoClassSummary,  # Use the default summary function for classification
+  verboseIter = TRUE,         # Display progress during cross-validation
+  savePredictions = "final",  # Save final predictions
+  selectionFunction = "best"  # Select the best model based on accuracy
+  #metric = "Accuracy"       # Evaluation metric (accuracy)
+)
+
+# Train a logistic regression model using 10-fold cross-validation
+logistic_cv_model <- train(diabetes ~ ., data = PimaIndiansDiabetes, method = "glm", family = "binomial", trControl = ctrl)
+
+# Print the summary of the cross-validated logistic regression model
+print(summary(logistic_cv_model))
+
+# Access the accuracy from the logistic regression model
+accuracy <- logistic_cv_model$results$Accuracy
+
+# Print the accuracy
+cat("Model Accuracy (10-fold cross-validation):", accuracy, "\n")
+
+# Use the trained logistic regression model to make predictions on the testing dataset
+lm_predictions <- predict(logistic_cv_model, newdata = Pima_test)
+
+# Print the first few predicted values for illustration
+cat("Predicted values for the testing dataset:\n")
+head(lm_predictions)
+
+# Evaluate the model's performance
+actual_values <- Pima_test$diabetes
+mse <- mean((lm_predictions - actual_values)^2)  # Calculate Mean Squared Error
+rmse <- sqrt(mse)  # Calculate Root Mean Squared Error
+
+# Print the evaluation results
+cat("Mean Squared Error (MSE): ", mse, "\n")
+cat("Root Mean Squared Error (RMSE): ", rmse, "\n")
+
+
+```
+
+# LDA With K-fold cross-validation
+```{r}
+# Define the control parameters for 5-fold cross-validation with ROC AUC as the metric
+ctrl_lda <- trainControl(
+  method = "cv",           # Use 5-fold cross-validation
+  number = 5,              # Number of folds
+  classProbs = TRUE,       # Enable class probabilities
+  summaryFunction = twoClassSummary,  # Use the default summary function for binary classification
+  verboseIter = TRUE,      # Display progress during cross-validation
+  savePredictions = "final",  # Save final predictions
+  selectionFunction = "best"  # Select the best model based on ROC AUC
+)
+
+# Train an LDA classifier using 5-fold cross-validation
+lda_cv_model <- train(diabetes ~ ., data = PimaIndiansDiabetes, method = "lda", trControl = ctrl_lda)
+
+# Print the summary of the cross-validated LDA classifier
+print(lda_cv_model)
+
+# Use the trained LDA model to make predictions on the testing dataset
+lda_predictions <- predict(lda_cv_model, newdata = Pima_test)
+
+# Print the first few predicted values for illustration
+cat("Predicted values for the testing dataset:\n")
+head(lda_predictions)
+
+# Evaluate the model's performance
+actual_values_lda <- Pima_test$diabetes
+confusion_matrix_lda <- table(Actual = actual_values_lda, Predicted = lda_predictions)
+
+# Print the confusion matrix
+cat("Confusion Matrix:\n")
+print(confusion_matrix_lda)
+
+# Calculate accuracy and other classification metrics
+accuracy_lda <- sum(diag(confusion_matrix_lda)) / sum(confusion_matrix_lda)
+precision_lda <- confusion_matrix_lda[2, 2] / sum(confusion_matrix_lda[, 2])
+recall_lda <- confusion_matrix_lda[2, 2] / sum(confusion_matrix_lda[2, ])
+f1_score_lda <- 2 * (precision_lda * recall_lda) / (precision_lda + recall_lda)
+
+# Print the classification metrics for LDA
+cat("Accuracy: ", accuracy_lda, "\n")
+cat("Precision: ", precision_lda, "\n")
+cat("Recall: ", recall_lda, "\n")
+cat("F1 Score: ", f1_score_lda, "\n")
+```
+
+# Naive Bayes with Repeated k-fold Cross Validation
+
+```{r}
+# Define the control parameters for Naive Bayes with Repeated k-fold Cross Validation
+ctrl_nb <- trainControl(
+  method = "repeatedcv",    # Use repeated k-fold cross-validation
+  number = 10,              # Number of folds
+  repeats = 5,             # Number of repeats
+  summaryFunction = twoClassSummary,  # Use summary function for binary classification
+  verboseIter = TRUE,      # Display progress during cross-validation
+  savePredictions = "final",  # Save final predictions
+  classProbs = TRUE,       # Enable class probabilities
+  selectionFunction = "best"  # Select the best model based on ROC AUC
+)
+
+# Train a Naive Bayes classifier based on the "diabetes" variable
+nb_cv_model <- train(diabetes ~ ., data = PimaIndiansDiabetes, method = "naive_bayes", trControl = ctrl_nb)
+
+# Print the summary of the cross-validated Naive Bayes classifier
+print(nb_cv_model)
+
+# Use the trained Naive Bayes model to make predictions on the testing dataset
+nb_predictions <- predict(nb_cv_model, newdata = Pima_test)
+
+# Print the first few predicted values for illustration
+cat("Predicted values for the testing dataset:\n")
+head(nb_predictions)
+
+# Evaluate the model's performance
+actual_values_nb <- Pima_test$diabetes
+confusion_matrix_nb <- table(Actual = actual_values_nb, Predicted = nb_predictions)
+
+# Print the confusion matrix
+cat("Confusion Matrix:\n")
+print(confusion_matrix_nb)
+
+# Calculate accuracy and other classification metrics for Naive Bayes
+accuracy_nb <- sum(diag(confusion_matrix_nb)) / sum(confusion_matrix_nb)
+precision_nb <- confusion_matrix_nb[2, 2] / sum(confusion_matrix_nb[, 2])
+recall_nb <- confusion_matrix_nb[2, 2] / sum(confusion_matrix_nb[2, ])
+f1_score_nb <- 2 * (precision_nb * recall_nb) / (precision_nb + recall_nb)
+
+# Print the classification metrics for Naive Bayes
+cat("Accuracy: ", accuracy_nb, "\n")
+cat("Precision: ", precision_nb, "\n")
+cat("Recall: ", recall_nb, "\n")
+cat("F1 Score: ", f1_score_nb, "\n")
+
+
+```
+
+
+# SVM with K-fold cross-validation
+```{r}
+# Define the number of repetitions and folds
+repeats <- 3
+folds <- 5
+
+# Define the train control settings for repeated k-fold cross-validation
+ctrl <- trainControl(
+  method = "repeatedcv",   # Repeated k-fold cross-validation
+  number = folds,         # Number of folds
+  repeats = repeats,      # Number of repetitions
+  verboseIter = TRUE
+)
+
+# Train an SVM classifier using the diabetes variable
+svm_model <- train(diabetes ~ ., data = PimaIndiansDiabetes, method = "svmRadial",  # nolint
+                   trControl = ctrl)
+
+# Print the summary of the SVM model
+print(svm_model)
+
+# Access the accuracy or other metrics
+svm_accuracy <- svm_model$results$Accuracy
+cat("SVM Model Accuracy:", svm_accuracy, "\n")
+```
+
+
+# Naive Bayes with Leave One Out Cross Validation
+
+```{r}
+# Create an empty vector to store predictions
+nb_predictions <- numeric(nrow(PimaIndiansDiabetes))
+
+# Perform LOOCV for the Naive Bayes classifier
+for (i in 1:nrow(PimaIndiansDiabetes)) {
+  # Create a training dataset excluding the current row (i)
+  train_data <- PimaIndiansDiabetes[-i, ]
+  
+  # Train the Naive Bayes classifier
+  nb_model <- naiveBayes(diabetes ~ ., data = train_data)
+  
+  # Make a prediction on the current row
+  nb_predictions[i] <- predict(nb_model, newdata = PimaIndiansDiabetes[i, ])
+}
+
+# Evaluate the model's performance
+actual_values <- PimaIndiansDiabetes$diabetes  # Update to "diabetes" as the actual variable
+confusion_matrix <- table(Actual = actual_values, Predicted = nb_predictions)
+
+# Print the confusion matrix
+cat("Confusion Matrix:\n")
+print(confusion_matrix)
+
+# Calculate accuracy and other classification metrics
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+precision <- confusion_matrix[2, 2] / sum(confusion_matrix[, 2])
+recall <- confusion_matrix[2, 2] / sum(confusion_matrix[2, ])
+f1_score <- 2 * (precision * recall) / (precision + recall)
+
+# Print the classification metrics
+cat("Accuracy (LOOCV): ", accuracy, "\n")
+cat("Precision (LOOCV): ", precision, "\n")
+cat("Recall (LOOCV): ", recall, "\n")
+cat("F1 Score (LOOCV): ", f1_score, "\n")
+
+```
